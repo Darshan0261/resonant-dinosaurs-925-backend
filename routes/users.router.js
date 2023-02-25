@@ -7,8 +7,18 @@ require('dotenv').config()
 const { UserModel } = require('../models/Users.model')
 const { BlacklistModel } = require('../models/Blacklist.model');
 const { authentication } = require('../middlewares/Authentication.middleware');
+const { authorization } = require('../middlewares/AdminAuthorization.middleware');
 
 const userRouter = express.Router();
+
+userRouter.get('/', authentication, authorization, async (req, res) => {
+    try {
+        const users = await UserModel.find();
+        res.send(users)
+    } catch (error) {
+        res.status(500).send({message: error.message})
+    }
+})
 
 userRouter.post('/signup', async (req, res) => {
     const { email, password, mobile, gender, name } = req.body;
