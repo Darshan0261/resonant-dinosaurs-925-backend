@@ -36,7 +36,7 @@ addressRouter.post('/add', authentication, async (req, res) => {
             {
                 $push: {
                     address: {
-                        name, mobile, street, town, pin, type
+                        name, mobile, house, city, state, locality, pin, type
                     }
                 }
             }
