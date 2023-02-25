@@ -100,20 +100,28 @@ userRouter.post('/logout', authentication, async (req, res) => {
 
 userRouter.delete('/delete/:id', authentication, authorization, async (req, res) => {
     const userId = req.params['id'];
+    const { token } = req.body;
+    const role = token.role;
+    const id = token.id;
     try {
         const user = await UserModel.findById(userId);
         if (!user) {
             return res.status(404).send({ message: 'User not found' })
         }
+    } catch (error) {
+        res.status(500).send({ message: error.message })
+    }
+    if(role=='admin' || id == userId) {
         try {
             await UserModel.findByIdAndDelete(userId);
             res.send({ message: 'User Removed' })
         } catch (error) {
             res.status(500).send({ message: error.message })
         }
-    } catch (error) {
-        res.status(500).send({ message: error.message })
-    }   
+    } else {
+        res.status(401).send({message: 'Access Denied'})
+    }
+       
 })
 
 module.exports = {
