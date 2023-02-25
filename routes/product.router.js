@@ -29,10 +29,10 @@ productRouter.post("/add", authentication, authorization, async (req, res) => {
 
 productRouter.get('/search', async (req, res) => {
     const payload = req.query;
-    if (payload.title) {
-        let title = payload.title.toLowerCase();
+    if (payload.description) {
+        let description = payload.description.toLowerCase();
         try {
-            const products = await ProductModel.find({ title: { $regex: '(?i)' + title } });
+            const products = await ProductModel.find({ description: { $regex: '(?i)' + description } });
             return res.send(products)
         } catch (error) {
             return res.send({ message: error.message })
