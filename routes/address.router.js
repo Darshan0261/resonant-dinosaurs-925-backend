@@ -26,8 +26,8 @@ addressRouter.post('/add', authentication, async (req, res) => {
     } catch (error) {
         return res.status(500).send({ message: error.message })
     }
-    const { name, mobile, street, town, pin, type } = req.body;
-    if (!name || !mobile || !street || !town || !pin) {
+    const { name, mobile, house, city, state, locality, pin, type } = req.body;
+    if (!name || !mobile || !locality || !house || !city || !state || !pin) {
         return res.status(400).send({ message: 'address fields not provided' })
     }
     try {
