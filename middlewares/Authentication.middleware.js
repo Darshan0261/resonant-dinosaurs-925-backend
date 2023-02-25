@@ -13,17 +13,22 @@ const authentication = (req, res, next) => {
         if (err) {
             return res.status(404).send({ message: err.message })
         }
-        try {
-            const Blacklist = await BlacklistModel.findOne({userId: decoded.id})
-            const tokens = Blacklist.tokens;
-            if(tokens.some(index => index == token)) {
-                return res.status(401).send({message: 'Login Again'})
-            }
-        } catch (error) {
-            return res.status(500).send({message: error.message})
-        }
         req.body.token = decoded;
-        next()
+        if (decoded.role == 'admin') {
+            next()
+        } else {
+            try {
+                const Blacklist = await BlacklistModel.findOne({ userId: decoded.id })
+                const tokens = Blacklist.tokens;
+                if (tokens.some(index => index == token)) {
+                    return res.status(401).send({ message: 'Login Again' })
+                }
+            } catch (error) {
+                return res.status(500).send({ message: error.message })
+            }
+            req.body.token = decoded;
+            next()
+        }
     });
 }
 
