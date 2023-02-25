@@ -58,7 +58,7 @@ productRouter.get("/:id", idvalidator, async (req, res) => {
 })
 
 
-productRouter.patch("/update/:id", authentication, authorization, idvalidator, async (req, res) => {
+productRouter.put("/update/:id", authentication, authorization, idvalidator, async (req, res) => {
     let id = req.params.id;
     const update = req.body;
     try {
