@@ -16,7 +16,7 @@ userRouter.get('/', authentication, authorization, async (req, res) => {
         const users = await UserModel.find();
         res.send(users)
     } catch (error) {
-        res.status(500).send({message: error.message})
+        res.status(500).send({ message: error.message })
     }
 })
 
@@ -96,6 +96,24 @@ userRouter.post('/logout', authentication, async (req, res) => {
     } catch (error) {
         return res.status(500).send({ message: error.message })
     }
+})
+
+userRouter.delete('/delete/:id', authentication, authorization, async (req, res) => {
+    const userId = req.params['id'];
+    try {
+        const user = await UserModel.findById(userId);
+        if (!user) {
+            return res.status(404).send({ message: 'User not found' })
+        }
+        try {
+            await UserModel.findByIdAndDelete(userId);
+            res.send({ message: 'User Removed' })
+        } catch (error) {
+            res.status(500).send({ message: error.message })
+        }
+    } catch (error) {
+        res.status(500).send({ message: error.message })
+    }   
 })
 
 module.exports = {
