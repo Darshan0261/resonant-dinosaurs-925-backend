@@ -51,7 +51,7 @@ ordersRouter.post('/place', authentication, async (req, res) => {
         }
         let price = 0;
         orders.forEach(product => {
-            price = price + product.price;
+            price = price + product.price*product.quantity;
         })
         const placedAt = Date.now();
         try {
