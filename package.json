@@ -17,9 +17,11 @@
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
+    "instamojo-nodejs": "^0.0.5",
     "jsonwebtoken": "^9.0.0",
     "mongoose": "^6.9.2",
     "nodemailer": "^6.9.1",
-    "nodemon": "^2.0.20"
+    "nodemon": "^2.0.20",
+    "url": "^0.11.0"
   }
 }

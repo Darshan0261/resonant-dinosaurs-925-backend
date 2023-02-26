@@ -9,7 +9,8 @@ const { adminRouter } = require('./routes/admin.router.js')
 const { cartRouter } = require('./routes/cart.router');
 const { addressRouter } = require('./routes/address.router.js');
 const { productRouter } = require('./routes/product.router.js');
-const { ordersRouter } = require('./routes/orders.router')
+const { ordersRouter } = require('./routes/orders.router');
+const {paymentRouter} = require( './routes/payment.router' );
 
 require('dotenv').config()
 
@@ -38,6 +39,7 @@ app.use('/admin', adminRouter)
 app.use('/cart', cartRouter)
 app.use('/address', addressRouter)
 app.use('/orders', ordersRouter)
+app.use( '/payment', paymentRouter)
 
 app.listen(process.env.port, async () => {
     try {
