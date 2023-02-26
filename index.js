@@ -11,25 +11,25 @@ const { cartRouter } = require('./routes/cart.router');
 const { addressRouter } = require('./routes/address.router.js');
 const { productRouter } = require('./routes/product.router.js');
 const { ordersRouter } = require('./routes/orders.router');
-const {paymentRouter} = require( './routes/payment.router' );
+const { payment } = require('./routes/payment.router');
 
 require('dotenv').config()
 
 const app = express();
 
 app.use(express.json());
-app.use( bodyParser.urlencoded( { extended: false } ) );
-app.use( bodyParser.json() );
 app.use(cors({
     origin: '*'
 }))
-app.use(function(req, res, next) {
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+app.use(function (req, res, next) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, PATCH, POST, PUT, DELETE');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     res.setHeader('Access-Control-Allow-Credentials', true);
     next();
-  });
+});
 app.use(cookieParser())
 
 app.get('/', (req, res) => {
@@ -42,7 +42,7 @@ app.use('/admin', adminRouter)
 app.use('/cart', cartRouter)
 app.use('/address', addressRouter)
 app.use('/orders', ordersRouter)
-app.use( '/payment', paymentRouter)
+app.use('/api/bid/', payment);
 
 app.listen(process.env.port, async () => {
     try {
