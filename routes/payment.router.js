@@ -73,16 +73,6 @@ payment.get('/callback/', authentication, UserAuth, async (req, res) => {
 
 		// Redirect the user to payment complete page.
 
-		const address = await AddressModel.findOne({ user_id: user_id, selected: true })
-
-		await fetch('http://localhost:4500/orders/place', {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				'Authorization': token
-			}
-		})
-
 		return res.redirect('http://localhost:5500/done.html');
 	}
 
