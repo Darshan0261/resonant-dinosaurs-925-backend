@@ -22,7 +22,7 @@ productRouter.post("/add", authentication, AdminAuth, async (req, res) => {
     try {
         const product = new ProductModel(payload)
         await product.save();
-        const productFilter = await ProducFiltertModel.findOne({ product: category });
+        const productFilter = await ProducFiltertModel.findOne({ product: category.toLowerCase() });
         if (!productFilter) {
             const createProductFilter = new ProducFiltertModel({
                 product: category.toLowerCase(),
@@ -46,10 +46,10 @@ productRouter.post("/add", authentication, AdminAuth, async (req, res) => {
 });
 
 productRouter.get("/filters", async (req, res) => {
-    let product = req.query;
+    let product = req.query.product;
     product = product.toLowerCase();
     try {
-        const data = await ProducFiltertModel.findOne({ product });
+        const data = await ProducFiltertModel.findOne({ product: { $regex: '(?i)' + product } });
         res.send(data);
     } catch (error) {
         res.status(501).send({ message: error.message })
