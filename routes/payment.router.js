@@ -73,7 +73,7 @@ payment.get('/callback/', authentication, UserAuth, async (req, res) => {
 
 		// Redirect the user to payment complete page.
 
-		return res.redirect('http://localhost:5500/done.html');
+		return res.redirect('https://uppstyle.netlify.app/index.html');
 	}
 
 });
