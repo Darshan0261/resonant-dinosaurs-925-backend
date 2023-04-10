@@ -14,7 +14,8 @@ const ProductSchema = mongoose.Schema({
     image_4: { type: String, required: true },
     image_5: { type: String, required: true },
     image_6: { type: String, required: true },
-    color: { type: String, required: true }
+    color: { type: String, required: true },
+    types: { type: [], required: true }
 })
 
 const ProductModel = mongoose.model("product", ProductSchema);
