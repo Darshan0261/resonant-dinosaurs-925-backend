@@ -53,9 +53,7 @@ payment.post('/pay', (req, res) => {
  * @desc Call back url for instamojo
  * @access public
  */
-payment.get('/callback/', authentication, UserAuth, async (req, res) => {
-	const user_id = req.body.token.id;
-	const token = req.cookies.token || req.headers.authorization;
+payment.get('/callback/', async (req, res) => {
 	let url_parts = url.parse(req.url, true),
 		responseData = url_parts.query;
 
@@ -73,7 +71,7 @@ payment.get('/callback/', authentication, UserAuth, async (req, res) => {
 
 		// Redirect the user to payment complete page.
 
-		return res.redirect('https://uppstyle.netlify.app/index.html');
+		return res.redirect({msg:'https://uppstyle.netlify.app/index.html'});
 	}
 
 });
