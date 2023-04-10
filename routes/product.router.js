@@ -26,16 +26,16 @@ productRouter.post("/add", authentication, AdminAuth, async (req, res) => {
         if (!productFilter) {
             const createProductFilter = new ProducFiltertModel({
                 product: category.toLowerCase(),
-                color: [color],
-                brand: [brand]
+                colors: [color],
+                brands: [brand]
             })
             await createProductFilter.save();
         } else {
-            if (!productFilter.color.some(ele => ele == color)) {
-                productFilter.color.push(color)
+            if (!productFilter.colors.some(ele => ele == color)) {
+                productFilter.colors.push(color)
             }
-            if (!productFilter.brand.some(ele => ele == brand)) {
-                productFilter.brand.push(brand)
+            if (!productFilter.brands.some(ele => ele == brand)) {
+                productFilter.brands.push(brand)
             }
             await productFilter.save();
         }

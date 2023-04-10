@@ -1,8 +1,8 @@
 const mongoose = require("mongoose");
 
 const ProducFilterSchema = mongoose.Schema({
-    category: { type: String, required: true },
-    color: { type: [String], default: [] },
+    product: { type: String, required: true },
+    colors: { type: [String], default: [] },
     brands: { type: [String], default: [] }
 })
 
