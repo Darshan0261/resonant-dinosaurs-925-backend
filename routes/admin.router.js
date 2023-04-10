@@ -3,21 +3,21 @@ const jwt = require('jsonwebtoken');
 const cookie = require('cookie')
 const bcrypt = require('bcrypt');
 const { AdminModel } = require('../models/Admin.model');
-const { OrdersModel } = require('../models/Orders.model')
 const { authentication } = require('../middlewares/Authentication.middleware');
-const { authorization } = require('../middlewares/AdminAuthorization.middleware');
+const { AdminAuth } = require('../middlewares/Authorization.middleware');
+const { BlacklistModel } = require('../models/Blacklist.model');
 require('dotenv').config()
 
 const adminRouter = express.Router();
 
 adminRouter.post('/register', async (req, res) => {
-    const { name, email, password, mobile, adminkey } = req.body;
+    const { first_name, last_name, email, password, mobile, adminkey } = req.body;
     if (!adminkey || adminkey != process.env.ADMIN_LOGIN_KEY) {
         return res.status(401).send({ message: 'Access Denied' })
     }
 
-    if (!mobile) {
-        return res.status(401).send({ message: 'Access Denied' })
+    if (!mobile || !first_name || !last_name || !password) {
+        return res.status(401).send({ message: 'Please provide all fields' })
     }
 
     try {
@@ -26,7 +26,7 @@ adminRouter.post('/register', async (req, res) => {
             return res.status(409).send({ message: 'Admin already registerd' })
         }
     } catch (error) {
-        return res.status(500).send({message: error.message})
+        return res.status(501).send({ message: error.message })
     }
 
     bcrypt.hash(password, +process.env.saltRounds, async function (err, hashedPass) {
@@ -36,9 +36,11 @@ adminRouter.post('/register', async (req, res) => {
         }
         try {
             const user = new AdminModel({
-                name, email, password: hashedPass, mobile
+                first_name, last_name, email, password: hashedPass, mobile
             })
             await user.save()
+            const Blacklist = new BlacklistModel({ admin_id: user._id });
+            await Blacklist.save();
             res.send({ message: 'Admin Registered Sucessfully' })
         } catch (error) {
             console.log(error)
@@ -65,20 +67,36 @@ adminRouter.post('/login', async (req, res) => {
             }
             if (result) {
                 var token = jwt.sign({ id: user._id, role: 'admin' }, process.env.LOGIN_TOKEN_SECRET);
-                res.setHeader('Set-Cookie', cookie.serialize('token', token, {
-                    httpOnly: true,
-                    maxAge: 60 * 60 * 24
-                }));
-                res.send({ message: 'Login Sucessful', token, name: user.name })
+                res.cookie('token', token);
+                const userInfo = {
+                    mobile: user.mobile,
+                    email: user.email,
+                    role: user.role,
+                    name: user.first_name + ' ' + user.last_name
+                }
+                res.cookie('userInfo', userInfo)
+                return res.send({ message: 'Login Sucessful', token, name: user.name })
             } else {
                 res.status(403).send({ message: 'Wrong Credentials' })
             }
         });
     } catch (error) {
-        return res.status(500).send({ message: error.message })
+        return res.status(501).send({ message: error.message })
     }
 })
 
+adminRouter.get('/logout', authentication, AdminAuth, async (req, res) => {
+    const token = req.cookies.token || req.headers.authorization;
+    const { id } = req.body.token;
+    try {
+        const Blacklist = await BlacklistModel.findOne({ admin_id: id });
+        Blacklist.token.push(token);
+        await Blacklist.save();
+        return res.send({ message: 'Logout Successfull' })
+    } catch (error) {
+        return res.status(501).send({ message: error.message })
+    }
+})
 
 
 module.exports = {

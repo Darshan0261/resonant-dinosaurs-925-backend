@@ -1,38 +1,107 @@
 const express = require("express");
 const { ProductModel } = require("../models/Products.model");
+const { ProducFiltertModel } = require("../models/productFilter.model");
 const { idvalidator } = require("../middlewares/idvalidator");
 const { authentication } = require('../middlewares/Authentication.middleware')
-const { authorization } = require('../middlewares/AdminAuthorization.middleware');
-
+const { AdminAuth } = require('../middlewares/Authorization.middleware')
 
 const productRouter = express.Router();
 
 productRouter.get("/", async (req, res) => {
     try {
         const data = await ProductModel.find();
-        res.send(data);
+        return res.send(data);
     } catch (error) {
-        res.status(500).send({ message: error.message })
+        return res.status(501).send({ message: error.message })
     }
 })
 
-productRouter.post("/add", authentication, authorization, async (req, res) => {
+productRouter.post("/add", authentication, AdminAuth, async (req, res) => {
     const payload = req.body;
+    const { category, brand, color } = req.body;
     try {
         const product = new ProductModel(payload)
-        await product.save()
+        await product.save();
+        const productFilter = await ProducFiltertModel.findOne({ product: category });
+        if (!productFilter) {
+            const createProductFilter = new ProducFiltertModel({
+                product: category.toLowerCase(),
+                color: [color],
+                brand: [brand]
+            })
+            await createProductFilter.save();
+        } else {
+            if (!productFilter.color.some(ele => ele == color)) {
+                productFilter.color.push(color)
+            }
+            if (!productFilter.brand.some(ele => ele == brand)) {
+                productFilter.brand.push(brand)
+            }
+            await productFilter.save();
+        }
         res.send({ message: "Product added" });
     } catch (error) {
-        return res.status(500).send({ message: error.message })
+        return res.status(501).send({ message: error.message })
     }
 });
 
+productRouter.get("/filters", async (req, res) => {
+    let product = req.query;
+    product = product.toLowerCase();
+    try {
+        const data = await ProducFiltertModel.findOne({ product });
+        res.send(data);
+    } catch (error) {
+        res.status(501).send({ message: error.message })
+    }
+})
+
+// productRouter.post("/filters/add", authentication, async (req, res) => {
+//     const payload = req.body;
+//     try {
+//         const product = new ProducFiltertModel(payload)
+//         await product.save()
+//         res.send({ message: "Product Filters are added" });
+//     } catch (error) {
+//         return res.status(500).send({ message: error.message })
+//     }
+// });
+
+
 productRouter.get('/search', async (req, res) => {
-    const payload = req.query;
-    if (payload.description) {
-        let description = payload.description.toLowerCase();
+    const types = req.query.types;
+    const category = req.query.category;
+    const payload = req.query
+    // console.log(payload)
+    if (types && category) {
+        //     let description = payload.description.toLowerCase();
         try {
-            const products = await ProductModel.find({ description: { $regex: '(?i)' + description } });
+            // const products = await ProductModel.find({ description: { $regex: '(?i)' + description } });
+            // const regexPattern = new RegExp(payload.pattern, "i");
+            const products = await ProductModel.find({
+                types: {
+                    $elemMatch: {
+                        $regex: new RegExp(types, "i")
+                    },
+                },
+                category: { $regex: '(?i)' + category }
+            });
+            return res.send(products)
+        } catch (error) {
+            return res.send({ message: error.message })
+        }
+    }
+    if (types) {
+        try {
+            // const products = await ProductModel.find({ description: { $regex: '(?i)' + description } });
+            // const regexPattern = new RegExp(payload.pattern, "i");
+            const products = await ProductModel.find({
+                types: {
+                    $elemMatch: {
+                        $regex: new RegExp(types, "i")
+                    },
+                },
+            });
             return res.send(products)
         } catch (error) {
             return res.send({ message: error.message })
@@ -58,7 +127,7 @@ productRouter.get("/:id", idvalidator, async (req, res) => {
 })
 
 
-productRouter.put("/update/:id", authentication, authorization, idvalidator, async (req, res) => {
+productRouter.put("/update/:id", authentication, AdminAuth, idvalidator, async (req, res) => {
     let id = req.params.id;
     const update = req.body;
     try {
@@ -70,7 +139,7 @@ productRouter.put("/update/:id", authentication, authorization, idvalidator, asy
     }
 })
 
-productRouter.delete("/delete/:id", authentication, authorization, idvalidator, async (req, res) => {
+productRouter.delete("/delete/:id", authentication, AdminAuth, idvalidator, async (req, res) => {
     let id = req.params.id;
     try {
         await ProductModel.findByIdAndDelete(id);

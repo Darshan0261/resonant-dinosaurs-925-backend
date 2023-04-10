@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
 
 const BlacklistSchema = mongoose.Schema({
-    userId: String,
+    user_id: String,
+    admin_id: String,
     tokens: {type: [String], default: []}
 })
 

@@ -7,11 +7,11 @@ require('dotenv').config()
 const { UserModel } = require('../models/Users.model')
 const { BlacklistModel } = require('../models/Blacklist.model');
 const { authentication } = require('../middlewares/Authentication.middleware');
-const { authorization } = require('../middlewares/AdminAuthorization.middleware');
+const { AdminAuth, UserAuth } = require('../middlewares/Authorization.middleware');
 
 const userRouter = express.Router();
 
-userRouter.get('/', authentication, authorization, async (req, res) => {
+userRouter.get('/', authentication, AdminAuth, async (req, res) => {
     try {
         const users = await UserModel.find();
         res.send(users)
@@ -21,8 +21,8 @@ userRouter.get('/', authentication, authorization, async (req, res) => {
 })
 
 userRouter.post('/signup', async (req, res) => {
-    const { email, password, mobile, gender, name } = req.body;
-    if (!name || !gender || !mobile || !password) {
+    const {first_name,last_name, email, password, mobile, gender } = req.body;
+    if (!first_name ||!last_name || !gender || !mobile || !password) {
         return res.status(409).send({ message: 'Please provide all fields' })
     }
     try {
@@ -30,22 +30,21 @@ userRouter.post('/signup', async (req, res) => {
         if (userExists) {
             return res.status(409).send({ message: 'Mobile number already registered' })
         }
-        bcrypt.hash(password, +process.env.saltRounds, async function (err, hashedPass) {
+        bcrypt.hash(password, +process.env.saltRounds, async (err, hashedPass) => {
             if (err) {
                 return res.status(404).send({ message: err.message })
             }
             try {
                 const user = new UserModel({
-                    name, email, password: hashedPass, mobile, gender
+                    first_name, last_name, email, password: hashedPass, mobile, gender
                 })
                 await user.save()
                 const userBlack = new BlacklistModel({
-                    userId: user._id
+                    user_id: user._id
                 })
                 await userBlack.save()
                 res.send({ message: 'User Registered Sucessfully' })
             } catch (error) {
-                console.log(error)
                 return res.status(404).send({ message: error.message })
             }
         });
@@ -71,11 +70,10 @@ userRouter.post('/login', async (req, res) => {
             }
             if (result) {
                 var token = jwt.sign({ id: user._id, role: 'user' }, process.env.LOGIN_TOKEN_SECRET);
-                res.setHeader('Set-Cookie', cookie.serialize('token', token, {
-                    httpOnly: true,
-                    maxAge: 60 * 60 * 24
-                }));
-                res.send({ message: 'Login Sucessful', token, name: user.name })
+                const userInfo = {name: `${user.first_name} ${user.last_name}`, mobile: user.mobile, user_id: user._id}
+                res.cookie('token', token);
+                res.cookie('userInfo', userInfo)
+                res.send({ message: 'Login Sucessful', token, name: user.first_name, email:user.email, mobile:user.mobile })
             } else {
                 res.status(403).send({ message: 'Wrong Credentials' })
             }
@@ -85,11 +83,27 @@ userRouter.post('/login', async (req, res) => {
     }
 })
 
-userRouter.post('/logout', authentication, async (req, res) => {
-    const token = req.headers.authorization;
+userRouter.post('/userdetails', authentication, async (req, res) => {
+    const { mobile } = req.body;
+
+    try {
+        const user = await UserModel.findOne({ mobile });
+        if (!user) {
+            return res.status(404).send({ message: 'User not found' })
+        }else if(user) {
+            res.send(user)
+        }
+    } catch (error) {
+        res.status(500).send({ message: error.message })
+
+    }
+})
+
+userRouter.post('/logout', authentication, UserAuth, async (req, res) => {
+    const token = req.cookies.token || req.headers.authorization;
     const { id } = req.body.token;
     try {
-        const Blacklist = await BlacklistModel.findOne({ userId: id })
+        const Blacklist = await BlacklistModel.findOne({ user_id: id })
         Blacklist.tokens.push(token);
         await Blacklist.save();
         res.send({ message: 'Logout Sucessfull' })
@@ -98,7 +112,7 @@ userRouter.post('/logout', authentication, async (req, res) => {
     }
 })
 
-userRouter.delete('/delete/:id', authentication, authorization, async (req, res) => {
+userRouter.delete('/delete/:id', authentication, UserAuth, async (req, res) => {
     const userId = req.params['id'];
     const { token } = req.body;
     const role = token.role;

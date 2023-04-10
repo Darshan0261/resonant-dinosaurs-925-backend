@@ -1,19 +1,20 @@
 const mongoose = require('mongoose');
 const { CartSchema } = require('../schemas/Cart.Schema')
-const { AddressSchema } = require('../schemas/Address.schema')
+const { WishlistSchema } = require('../schemas/Wishlist.Schema')
 
 const UserSchema = mongoose.Schema({
-    name: { type: String, required: true },
-    email: String,
-    gender: { type: String, enum: ['male', 'female'], required: true },
+    first_name:{type:String, required: true},
+    last_name: {type:String, required: true},
+    email: {type:String, required: true},
+    gender: { type: String, enum: ['male', 'female','other'], required: true },
     mobile: { type: Number, required: true },
     password: { type: String, required: true },
-    address: {
-        type: [AddressSchema],
-        default: []
-    },
     cart: {
         type: [CartSchema],
+        default: []
+    },
+    wishlist: {
+        type: [WishlistSchema],
         default: []
     }
 })

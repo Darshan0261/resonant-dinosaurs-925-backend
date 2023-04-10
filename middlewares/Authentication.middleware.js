@@ -15,10 +15,8 @@ const authentication = (req, res, next) => {
         }
         req.body.token = decoded;
         if (decoded.role == 'admin') {
-            next()
-        } else {
             try {
-                const Blacklist = await BlacklistModel.findOne({ userId: decoded.id })
+                const Blacklist = await BlacklistModel.findOne({ admin_id: decoded.id })
                 const tokens = Blacklist.tokens;
                 if (tokens.some(index => index == token)) {
                     return res.status(401).send({ message: 'Login Again' })
@@ -26,9 +24,19 @@ const authentication = (req, res, next) => {
             } catch (error) {
                 return res.status(500).send({ message: error.message })
             }
-            req.body.token = decoded;
-            next()
+        } else {
+            try {
+                const Blacklist = await BlacklistModel.findOne({ user_id: decoded.id })
+                const tokens = Blacklist.tokens;
+                if (tokens.some(index => index == token)) {
+                    return res.status(401).send({ message: 'Login Again' })
+                }
+            } catch (error) {
+                return res.status(500).send({ message: error.message })
+            }
         }
+        req.body.token = decoded;
+        next()
     });
 }
 

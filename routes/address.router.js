@@ -1,110 +1,115 @@
 const express = require('express');
 const { authentication } = require('../middlewares/Authentication.middleware')
-const { UserModel } = require('../models/Users.model')
+const { UserModel } = require('../models/Users.model');
+const { UserAuth } = require('../middlewares/Authorization.middleware');
+const { AddressModel } = require('../models/Address.model');
 const addressRouter = express.Router();
 
-addressRouter.get('/', authentication, async (req, res) => {
+addressRouter.get('/', authentication, UserAuth, async (req, res) => {
     const { token } = req.body;
     const userId = token.id;
     try {
-        const user = await UserModel.findOne({ _id: userId });
-        const addresses = user.address;
-        res.send(addresses)
+        const addresses = await AddressModel.find({ user_id: userId });
+        return res.send(addresses)
     } catch (error) {
-        res.status(500).send({ message: error.message })
+        return res.status(501).send({ message: error.message })
     }
 })
 
-addressRouter.post('/add', authentication, async (req, res) => {
+addressRouter.get('/:id', authentication, UserAuth, async (req, res) => {
+    const { token } = req.body;
+    const addressId = req.params['id'];
+    const user_id = token.id;
+    try {
+        const address = await AddressModel.findOne({ user_id, _id: addressId });
+        if (!address) {
+            return res.status(401).send({ message: 'Address not found' });
+        }
+        return res.send(address)
+    } catch (error) {
+        return res.status(501).send({ message: error.message })
+    }
+})
+
+addressRouter.post('/add', authentication, UserAuth, async (req, res) => {
     const { token } = req.body;
     const userId = token.id;
-    try {
-        const user = await UserModel.findOne({ _id: userId });
-        if (!user) {
-            return res.status(401).send({ message: 'Access Denied' })
-        }
-    } catch (error) {
-        return res.status(500).send({ message: error.message })
-    }
+    let selected = false;
     const { name, mobile, house, city, state, locality, pin, type } = req.body;
     if (!name || !mobile || !locality || !house || !city || !state || !pin) {
         return res.status(400).send({ message: 'address fields not provided' })
     }
     try {
-        await UserModel.findOneAndUpdate(
-            { _id: userId },
-            {
-                $push: {
-                    address: {
-                        name, mobile, house, city, state, locality, pin, type
-                    }
-                }
-            }
-        )
-        res.send({ message: 'Address added' })
+        const addressExists = await AddressModel.find({ user_id: userId });
+        if (addressExists.length == 0) {
+            selected = true;
+        }
+        const address = new AddressModel({ name, mobile, house, city, state, locality, pin, type, selected, user_id: userId })
+        await address.save()
+        return res.send({ message: 'Address added' })
     } catch (error) {
-        console.log(error);
         return res.status(500).send({ message: error.message })
     }
 })
 
-addressRouter.delete('/remove/:id', authentication, async (req, res) => {
+addressRouter.delete('/remove/:id', authentication, UserAuth, async (req, res) => {
     const { token } = req.body;
     const userId = token.id;
-    try {
-        const user = await UserModel.findOne({ _id: userId });
-        if (!user) {
-            return res.status(401).send({ message: 'Access Denied' })
-        }
-    } catch (error) {
-        return res.status(500).send({ message: error.message })
-    }
     const addressId = req.params['id'];
-    const address = user.address;
-    if (!address.some(index => index._id == addressId)) {
-        return res.status(404).send({ message: 'Address not found' })
-    }
     try {
-        await UserModel.findOneAndUpdate({ _id: userId },
-            {
-                $pull:
-                    { address: { _id: addressId } }
-            })
-        res.send({ message: 'Address Removed' })
+        const address = await AddressModel.findOne({ user_id: userId, _id: addressId });
+        if (!address) {
+            return res.status(401).send({ message: 'Address not found' })
+        }
+        await AddressModel.findOneAndDelete({ user_id: userId, _id: addressId });
+        return res.send({ message: 'Address Removed Successfully' })
     } catch (error) {
-        res.status(500).send({ message: error.message })
+        return res.status(501).send({ message: error.message })
     }
 })
 
-addressRouter.patch('/edit/:id', authentication, async (req, res) => {
+addressRouter.patch('/update/:id', authentication, UserAuth, async (req, res) => {
     const { token } = req.body;
     const userId = token.id;
-    try {
-        const user = await UserModel.findOne({ _id: userId });
-        if (!user) {
-            return res.status(401).send({ message: 'Access Denied' })
-        }
-    } catch (error) {
-        return res.status(500).send({ message: error.message })
-    }
+
     const addressId = req.params['id'];
-    const address = user.address;
-    if (!address.some(index => index._id == addressId)) {
-        return res.status(404).send({ message: 'Address not found' })
-    }
+
     const payload = req.body;
+    if (payload.selected) {
+        return res.status(409).send({ message: 'Bad Request - Cannot change default status' })
+    }
     try {
-        address.forEach(index => {
-            if (index._id == addressId) {
-                for (let chr in payload) {
-                    index[chr] = payload[chr];
-                }
+        const address = await AddressModel.findOne({ user_id: userId, _id: addressId });
+        if (!address) {
+            return res.status(401).send({ message: 'Address not found' })
+        }
+        await AddressModel.findOneAndUpdate({ _id: addressId }, payload)
+        return res.send({ message: 'Address Updated' })
+    } catch (error) {
+        return res.status(501).send({ message: error.message })
+    }
+})
+
+addressRouter.patch('/update/default/:id', authentication, UserAuth, async (req, res) => {
+    const { token } = req.body;
+    const user_id = token.id;
+    const address_id = req.params['id'];
+    try {
+        const addresses = await AddressModel.find({ user_id: user_id });
+        if (addresses.length == 0 || !addresses) {
+            return res.status(404).send({ message: 'Address Not Found' })
+        }
+        addresses.forEach(add => {
+            if (add._id == address_id) {
+                selected = true;
+            } else {
+                selected = false;
             }
         })
-        await user.save()
-        res.send({ message: 'Address Updated' })
+        await addresses.save();
+        return res.send({ message: 'Default Address Changed' })
     } catch (error) {
-        res.status(500).send({ message: error.message })
+        return res.status(501).send({ message: error.message })
     }
 })
 
