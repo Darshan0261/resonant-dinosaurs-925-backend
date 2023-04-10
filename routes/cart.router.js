@@ -113,7 +113,7 @@ cartRouter.patch("/increase/:id", authentication, UserAuth, idvalidator, async (
     cart.forEach((index) => {
       if (index.productId == productId) {
         index.quantity++;
-        index.price = index.price + price - price * product.discount;
+        index.price = index.price + price;
       }
     });
     await user.save();
@@ -143,7 +143,7 @@ cartRouter.patch("/decrease/:id", authentication, UserAuth, idvalidator,  async 
           flag = true;
         } else {
           index.quantity--;
-          index.price = index.price - price - price * product.discount;
+          index.price = index.price - price;
         }
       }
     });
